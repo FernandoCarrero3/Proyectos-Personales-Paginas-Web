@@ -66,3 +66,62 @@ window.addEventListener("DOMContentLoaded", async () => {
   cargarFrase();
 });
 
+
+//CONFIRMACION FORMULARIO
+
+const form = document.getElementById("form-contacto");
+const estado = document.getElementById("estado-envio");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const data = new FormData(form);
+  try {
+    const respuesta = await fetch(form.action, {
+      method: form.method,
+      body: data,
+      headers: { Accept: "application/json" }
+    });
+
+    if (respuesta.ok) {
+      estado.textContent = "✅ ¡Mensaje enviado correctamente!";
+      form.reset();
+    } else {
+      estado.textContent = "⚠️ Hubo un problema al enviar el mensaje.";
+    }
+  } catch {
+    estado.textContent = "⚠️ Error de conexión. Inténtalo más tarde.";
+  }
+});
+
+
+///CLIMA
+
+async function obtenerClimaOpenMeteo(lat, lon) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
+
+  const climaDiv = document.getElementById("info-clima");
+  try {
+    const respuesta = await fetch(url);
+    if (!respuesta.ok) throw new Error("No se pudo obtener el clima");
+    const data = await respuesta.json();
+
+    const clima = data.current_weather;  // objeto con datos
+    const temp = clima.temperature;
+    const viento = clima.windspeed;
+    // Open-Meteo no da “descripción” textual, pero puedes interpretar según viento, etc.
+
+    climaDiv.innerHTML = `
+      <p>${temp} °C</p>
+      <p>Viento: ${viento} km/h</p>
+    `;
+  } catch (error) {
+    console.error(error);
+    climaDiv.textContent = "Error al cargar el clima";
+  }
+}
+
+// Por ejemplo, para Huelva (latitude ~ 37.26, longitude ~ -6.94)
+obtenerClimaOpenMeteo(37.26, -6.94);
+
+
+
