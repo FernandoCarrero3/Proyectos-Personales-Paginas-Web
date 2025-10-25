@@ -1,96 +1,70 @@
 // src/App.jsx
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import NoteForm from './components/NoteForm';
-import NoteList from './components/NoteList';
+import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 
-const API_URL = 'http://localhost:4000/api/notas';
+// 1. Importamos useAuth
+import { useAuth } from './context/AuthContext';
+
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import NotasPage from './pages/NotasPage';
+
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
-  const [notas, setNotas] = useState([]);
+  // 2. Obtenemos el estado de autenticación y la función 'logout'
+  const { isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
 
-  // ---- ¡NUEVO ESTADO! ----
-  // 1. Guardará el objeto de la nota que queremos editar.
-  //    Si es 'null', significa que estamos creando una nota nueva.
-  const [notaAEditar, setNotaAEditar] = useState(null);
-
-  // --- (Funciones existentes) ---
-  const cargarNotas = async () => {
-    try {
-      const respuesta = await axios.get(API_URL);
-      setNotas(respuesta.data);
-    } catch (error) {
-      console.error("Error al cargar las notas:", error);
-    }
-  };
-  useEffect(() => { cargarNotas(); }, []);
-  const handleCrearNota = async (datosNota) => {
-    try {
-      await axios.post(API_URL, datosNota);
-      // Después de crear, vuelve a cargar las notas
-      cargarNotas();
-    } catch (error) {
-      console.error("Error al crear la nota:", error);
-    }
-  };
-  const handleBorrarNota = async (id) => {
-    try {
-      await axios.delete(`${API_URL}/${id}`);
-      // Después de borrar, vuelve a cargar las notas
-      cargarNotas();
-    } catch (error) {
-      console.error("Error al borrar la nota:", error);
-    }
-  };
-
-  // ---- ¡NUEVA FUNCIÓN! ----
-  // 2. Se llama cuando el usuario hace clic en "Editar" en una nota.
-  const handleEditarClick = (nota) => {
-    // Guardamos la nota completa en el estado 'notaAEditar'
-    setNotaAEditar(nota);
-  };
-
-  // ---- ¡NUEVA FUNCIÓN! ----
-  // 3. Se llama cuando se envía el formulario en modo "edición".
-  const handleActualizarNota = async (datosNota) => {
-    try {
-      // Obtenemos el ID de la nota que está guardada en el estado
-      const id = notaAEditar._id;
-      // Hacemos la petición PUT a la API
-      await axios.put(`${API_URL}/${id}`, datosNota);
-
-      // Refrescamos la lista de notas
-      cargarNotas();
-
-      // Limpiamos el estado de "nota a editar" (para volver al modo "Crear")
-      setNotaAEditar(null);
-    } catch (error) {
-      console.error("Error al actualizar la nota:", error);
-    }
-  };
-
-  // ---- ¡NUEVA FUNCIÓN! ----
-  // 4. Se llama si el usuario cancela la edición
-  const handleCancelarEdicion = () => {
-    setNotaAEditar(null);
+  // 3. Creamos una función para manejar el logout
+  const handleLogout = () => {
+    logout();
+    navigate('/login'); // Redirigimos al login después de salir
   };
 
   return (
     <div className='app-container'>
-      <h1>Mi Bloc de Notas Full-Stack</h1>
+      <header>
+        <h1>Mi Bloc de Notas Full-Stack</h1>
+        <nav>
+          {/* 4. Lógica condicional para la navegación */}
+          {isAuthenticated ? (
+            // Si está autenticado
+            <>
+              <Link to="/">Mis Notas</Link>
+              {/* Usamos un <span> que parece un link para llamar a la función.
+                También podrías usar un <button>
+              */}
+              <span
+                onClick={handleLogout}
+                style={{ cursor: 'pointer', marginLeft: '15px', color: '#e74c3c' }}
+              >
+                Logout
+              </span>
+            </>
+          ) : (
+            // Si NO está autenticado
+            <>
+              <Link to="/login">Login</Link>
+              <Link to="/register" style={{ marginLeft: '15px' }}>Registro</Link>
+            </>
+          )}
+        </nav>
+      </header>
 
-      <NoteForm
-        alCrearNota={handleCrearNota}
-        alActualizarNota={handleActualizarNota}
-        notaAEditar={notaAEditar}
-        alCancelarEdicion={handleCancelarEdicion}
-      />
-
-      <NoteList
-        notas={notas}
-        alBorrarNota={handleBorrarNota}
-        alEditarClick={handleEditarClick}
-      />
+      <main>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <NotasPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+        </Routes>
+      </main>
     </div>
   );
 }

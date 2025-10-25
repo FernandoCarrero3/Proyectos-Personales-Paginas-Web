@@ -5,7 +5,13 @@ const cors = require('cors'); // Importamos cors
 require('dotenv').config();
 
 // Importamos nuestro modelo de Nota
-const Nota = require('./models/Nota'); 
+const Nota = require('./models/Nota');
+
+// Importamos nuestro modelo de auth
+const authRoutes = require('./routes/auth');
+
+//Importamos nuestro guardia
+const authMiddleware = require('./middleware/authMiddleware');
 
 // 2. Variables de configuración
 const app = express();
@@ -14,15 +20,15 @@ const MONGO_URI = process.env.MONGO_URI;
 
 // 3. Middlewares
 // Middleware para permitir que el front-end se conecte (CORS)
-app.use(cors()); 
+app.use(cors());
 // Middleware para que Express entienda el JSON que le envía el front-end
-app.use(express.json()); 
+app.use(express.json());
 
 // 4. Conexión a la Base de Datos
 mongoose.connect(MONGO_URI)
   .then(() => {
     console.log('Conexión a MongoDB exitosa');
-    
+
     // Arrancamos el servidor solo si la DB está conectada
     app.listen(PUERTO, () => {
       console.log(`Servidor escuchando en el puerto ${PUERTO}`);
@@ -36,24 +42,29 @@ mongoose.connect(MONGO_URI)
 // 5. RUTAS DE NUESTRA API (AQUÍ ESTÁ EL CRUD)
 // ----------------------------------------------
 
+// Rutas de Autenticación (se activarán con /api/auth/...)
+app.use('/api/auth', authRoutes);
+
 // C.R.U.D: CREATE (Crear)
 // Endpoint para CREAR una nueva nota
 // Se activará con una petición POST a http://localhost:4000/api/notas
-app.post('/api/notas', async (req, res) => {
+app.post('/api/notas', authMiddleware, async (req, res) => {
   try {
-    // req.body contiene el JSON que nos envía el front-end (React)
     const { titulo, contenido } = req.body;
 
-    // Creamos una nueva nota usando el Modelo
+    // 1. ¡Aquí está la magia! Obtenemos el ID del usuario
+    //    gracias al middleware 'authMiddleware' (que lo puso en req.usuario)
+    const userId = req.usuario.id;
+
+    // 2. Creamos una nueva nota usando el Modelo
     const nuevaNota = new Nota({
       titulo,
-      contenido
+      contenido,
+      user: userId // 3. ¡Añadimos el ID del dueño!
     });
 
-    // Guardamos la nota en la base de datos
+    // 4. Guardamos la nota en la base de datos
     const notaGuardada = await nuevaNota.save();
-
-    // Respondemos al front-end con la nota recién guardada (y un estado 201: Creado)
     res.status(201).json(notaGuardada);
 
   } catch (error) {
@@ -66,12 +77,16 @@ app.post('/api/notas', async (req, res) => {
 // C.R.U.D: READ (Leer)
 // Endpoint para LEER TODAS las notas
 // Se activará con una petición GET a http://localhost:4000/api/notas
-app.get('/api/notas', async (req, res) => {
+app.get('/api/notas', authMiddleware, async (req, res) => {
   try {
-    // Usamos el modelo para buscar todas las notas en la DB
-    const notas = await Nota.find(); // .find() sin argumentos trae todo
+    // 1. Obtenemos el ID del usuario logueado
+    const userId = req.usuario.id;
 
-    // Respondemos con todas las notas en formato JSON
+    // 2. Usamos el modelo para buscar SOLO las notas
+    //    donde el campo 'user' coincida con el ID del usuario.
+    const notas = await Nota.find({ user: userId }).sort({ fecha: -1 }); // Opcional: .sort() las ordena por fecha (más nuevas primero)
+
+    // 3. Respondemos con las notas (solo las suyas)
     res.status(200).json(notas);
 
   } catch (error) {
@@ -84,19 +99,31 @@ app.get('/api/notas', async (req, res) => {
 // C.R.U.D: UPDATE (Actualizar)
 // Endpoint para ACTUALIZAR una nota por su ID
 // Se activará con una petición PUT a http://localhost:4000/api/notas/ID_DE_LA_NOTA
-app.put('/api/notas/:id', async (req, res) => {
+app.put('/api/notas/:id', authMiddleware, async (req, res) => {
   try {
-    // req.params.id contiene el ID que viene en la URL
-    const { id } = req.params; 
-
-    // req.body contiene la nueva información a actualizar
+    const { id } = req.params;
     const { titulo, contenido } = req.body;
+    const userId = req.usuario.id;
 
-    // Buscamos la nota por su ID y la actualizamos
-    // { new: true } hace que nos devuelva la nota actualizada, no la vieja
+    // 1. Buscamos la nota por su ID
+    let nota = await Nota.findById(id);
+
+    // 2. Verificamos si la nota existe
+    if (!nota) {
+      return res.status(404).json({ mensaje: 'Nota no encontrada' });
+    }
+
+    // 3. ¡VERIFICACIÓN DE PROPIEDAD!
+    //    Comparamos el 'user' de la nota (que es un ObjectId)
+    //    con el 'userId' del token (que es un string).
+    if (nota.user.toString() !== userId) {
+      return res.status(401).json({ mensaje: 'No autorizado. Esta nota no le pertenece.' });
+    }
+
+    // 4. Si todo es correcto, actualizamos la nota
     const notaActualizada = await Nota.findByIdAndUpdate(
-      id, 
-      { titulo, contenido }, 
+      id,
+      { titulo, contenido },
       { new: true }
     );
 
@@ -112,14 +139,26 @@ app.put('/api/notas/:id', async (req, res) => {
 // C.R.U.D: DELETE (Borrar)
 // Endpoint para BORRAR una nota por su ID
 // Se activará con una petición DELETE a http://localhost:4000/api/notas/ID_DE_LA_NOTA
-app.delete('/api/notas/:id', async (req, res) => {
+app.delete('/api/notas/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.usuario.id;
 
-    // Buscamos la nota por ID y la borramos
+    // 1. Buscamos la nota por su ID
+    let nota = await Nota.findById(id);
+
+    // 2. Verificamos si la nota existe
+    if (!nota) {
+      return res.status(404).json({ mensaje: 'Nota no encontrada' });
+    }
+
+    // 3. ¡VERIFICACIÓN DE PROPIEDAD!
+    if (nota.user.toString() !== userId) {
+      return res.status(401).json({ mensaje: 'No autorizado. Esta nota no le pertenece.' });
+    }
+
+    // 4. Si todo es correcto, la eliminamos
     await Nota.findByIdAndDelete(id);
-
-    // Respondemos con un mensaje de éxito
     res.status(200).json({ mensaje: 'Nota eliminada correctamente' });
 
   } catch (error) {
