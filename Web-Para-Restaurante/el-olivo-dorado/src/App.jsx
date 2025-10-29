@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Menu from './components/Menu';
@@ -7,6 +9,10 @@ import ReservationForm from './components/ReservationForm'; // <-- 1. Importar F
 import Footer from './components/Footer';                 // <-- 2. Importar Footer
 
 function App() {
+
+  useEffect(() => {
+    AOS.init({ duration: 1000, once: true }); // 1 segundo, 1 sola vez
+  }, []);
   return (
     <div className="bg-brand-bg text-brand-dark">
       <Navbar />
