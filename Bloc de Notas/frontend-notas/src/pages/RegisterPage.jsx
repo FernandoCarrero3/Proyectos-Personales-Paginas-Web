@@ -3,13 +3,16 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import styles from './AuthForm.module.css'; // 1. Importar estilos
+import Spinner from '../components/Spinner'; // 2. Importar Spinner
 
 function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
-  
-  const { login } = useAuth(); // 1. Obtenemos 'login' para iniciar sesión después
+  const [loading, setLoading] = useState(false); // 3. Estado de carga
+
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -20,47 +23,50 @@ function RegisterPage() {
       setError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
+    
+    setLoading(true); // 4. Empezar a cargar
 
     try {
-      // 2. Paso 1: Registrar al usuario
-      await axios.post('http://localhost:4000/api/auth/register', { 
-        email, 
-        password 
-      });
-
-      // 3. Paso 2: Si el registro fue exitoso, hacer login
+      await axios.post('http://localhost:4000/api/auth/register', { email, password });
       await login(email, password);
-
-      // 4. Paso 3: Redirigir a la página principal
       navigate('/');
     } catch (err) {
-      // 5. Capturamos el error (ej. "El email ya está en uso")
       setError(err.response?.data?.mensaje || 'Error al registrarse');
+    } finally {
+      setLoading(false); // 5. Dejar de cargar
     }
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '40px auto' }}>
+    <div className={styles.formContainer}>
       <h2>Registro</h2>
-      <form onSubmit={handleSubmit}>
-        <input 
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input 
-          type="password"
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <button type="submit">Crear Cuenta</button>
-      </form>
-      <p>
+
+      {loading ? (
+        <Spinner />
+      ) : (
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <input 
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input 
+            type="password"
+            placeholder="Contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          {error && <p className={styles.error}>{error}</p>}
+          <button type="submit" disabled={loading}>
+            {loading ? 'Creando...' : 'Crear Cuenta'}
+          </button>
+        </form>
+      )}
+
+      <p className={styles.link}>
         ¿Ya tienes cuenta? <Link to="/login">Inicia sesión aquí</Link>
       </p>
     </div>

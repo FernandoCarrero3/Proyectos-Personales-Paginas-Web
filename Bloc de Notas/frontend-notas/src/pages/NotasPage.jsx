@@ -1,97 +1,102 @@
-// src/App.jsx
+// src/pages/NotasPage.jsx
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from 'axios'; 
 import NoteForm from '../components/NoteForm';
 import NoteList from '../components/NoteList';
+import Spinner from '../components/Spinner';
 
-const API_URL = 'http://localhost:4000/api/notas';
+// 1. ¡¡ARREGLADO!! Volvemos a la URL absoluta del back-end
+const API_URL = 'http://localhost:4000/api/notas'; 
 
-function NotasPage() {
-  const [notas, setNotas] = useState([]);
-
-  // ---- ¡NUEVO ESTADO! ----
-  // 1. Guardará el objeto de la nota que queremos editar.
-  //    Si es 'null', significa que estamos creando una nota nueva.
+function NotasPage() { 
+  const [notas, setNotas] = useState([]); // Inicia como array vacío
   const [notaAEditar, setNotaAEditar] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // --- (Funciones existentes) ---
   const cargarNotas = async () => {
+    setLoading(true);
     try {
-      const respuesta = await axios.get(API_URL);
-      setNotas(respuesta.data);
+      const respuesta = await axios.get(API_URL); 
+      
+      // 2. ¡¡MEDIDA DE SEGURIDAD!!
+      //    Nos aseguramos de que lo que llegó es SÍ o SÍ un array.
+      if (Array.isArray(respuesta.data)) {
+        setNotas(respuesta.data); 
+      } else {
+        setNotas([]); // Si no, usamos un array vacío
+      }
     } catch (error) {
       console.error("Error al cargar las notas:", error);
+      setNotas([]); // Si hay un error, también usamos un array vacío
+    } finally {
+      setLoading(false);
     }
   };
-  useEffect(() => { cargarNotas(); }, []);
+
+  useEffect(() => {
+    cargarNotas();
+  }, []); 
+
+  // --- (El resto de tus funciones no cambia) ---
+
   const handleCrearNota = async (datosNota) => {
     try {
       await axios.post(API_URL, datosNota);
-      // Después de crear, vuelve a cargar las notas
       cargarNotas();
     } catch (error) {
       console.error("Error al crear la nota:", error);
     }
   };
+  
+  const handleActualizarNota = async (datosNota) => {
+    try {
+      const id = notaAEditar._id;
+      // Usamos la URL completa aquí también
+      await axios.put(`${API_URL}/${id}`, datosNota);
+      setNotaAEditar(null);
+      cargarNotas();
+    } catch (error) {
+      console.error("Error al actualizar la nota:", error);
+    }
+  };
+
   const handleBorrarNota = async (id) => {
     try {
+      // Y aquí
       await axios.delete(`${API_URL}/${id}`);
-      // Después de borrar, vuelve a cargar las notas
       cargarNotas();
     } catch (error) {
       console.error("Error al borrar la nota:", error);
     }
   };
 
-  // ---- ¡NUEVA FUNCIÓN! ----
-  // 2. Se llama cuando el usuario hace clic en "Editar" en una nota.
   const handleEditarClick = (nota) => {
-    // Guardamos la nota completa en el estado 'notaAEditar'
     setNotaAEditar(nota);
   };
 
-  // ---- ¡NUEVA FUNCIÓN! ----
-  // 3. Se llama cuando se envía el formulario en modo "edición".
-  const handleActualizarNota = async (datosNota) => {
-    try {
-      // Obtenemos el ID de la nota que está guardada en el estado
-      const id = notaAEditar._id;
-      // Hacemos la petición PUT a la API
-      await axios.put(`${API_URL}/${id}`, datosNota);
-
-      // Refrescamos la lista de notas
-      cargarNotas();
-
-      // Limpiamos el estado de "nota a editar" (para volver al modo "Crear")
-      setNotaAEditar(null);
-    } catch (error) {
-      console.error("Error al actualizar la nota:", error);
-    }
-  };
-
-  // ---- ¡NUEVA FUNCIÓN! ----
-  // 4. Se llama si el usuario cancela la edición
   const handleCancelarEdicion = () => {
     setNotaAEditar(null);
   };
 
   return (
-    <div className='app-container'>
-      <h1>Mi Bloc de Notas Full-Stack</h1>
-
-      <NoteForm
+    <> 
+      <NoteForm 
         alCrearNota={handleCrearNota}
         alActualizarNota={handleActualizarNota}
         notaAEditar={notaAEditar}
         alCancelarEdicion={handleCancelarEdicion}
       />
-
-      <NoteList
-        notas={notas}
-        alBorrarNota={handleBorrarNota}
-        alEditarClick={handleEditarClick}
-      />
-    </div>
+      
+      {loading ? (
+        <Spinner />
+      ) : (
+        <NoteList 
+          notas={notas} 
+          alBorrarNota={handleBorrarNota}
+          alEditarClick={handleEditarClick}
+        />
+      )}
+    </>
   );
 }
 

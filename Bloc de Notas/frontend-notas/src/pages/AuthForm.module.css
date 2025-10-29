@@ -1,0 +1,52 @@
+/* src/pages/AuthForm.module.css */
+
+.formContainer {
+  max-width: 450px;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.formContainer h2 {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 25px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+}
+
+.form input {
+  /* Ya tenemos estilos globales en index.css, 
+     pero podemos afinarlos aquí si queremos */
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+
+.error {
+  color: #e74c3c; /* Rojo */
+  background-color: #fbe2e0;
+  border: 1px solid #e74c3c;
+  padding: 10px;
+  border-radius: 5px;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.link {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.link a {
+  color: #3498db;
+  font-weight: bold;
+  text-decoration: none;
+}
+.link a:hover {
+  text-decoration: underline;
+}

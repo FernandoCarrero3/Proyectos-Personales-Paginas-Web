@@ -1,51 +1,42 @@
 // src/App.jsx
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
-
-// 1. Importamos useAuth
-import { useAuth } from './context/AuthContext';
+import { useAuth } from './context/AuthContext'; 
+import styles from './App.module.css'; // 1. Importar estilos
 
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import NotasPage from './pages/NotasPage';
-
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute from './components/ProtectedRoute'; 
 
 function App() {
-  // 2. Obtenemos el estado de autenticación y la función 'logout'
   const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
-  // 3. Creamos una función para manejar el logout
   const handleLogout = () => {
     logout();
-    navigate('/login'); // Redirigimos al login después de salir
+    navigate('/login');
   };
 
   return (
     <div className='app-container'>
-      <header>
-        <h1>Mi Bloc de Notas Full-Stack</h1>
-        <nav>
-          {/* 4. Lógica condicional para la navegación */}
+      {/* 2. Aplicar estilos al header y nav */}
+      <header className={styles.header}>
+        <h1>Mi Bloc de Notas</h1>
+        <nav className={styles.nav}>
           {isAuthenticated ? (
-            // Si está autenticado
             <>
               <Link to="/">Mis Notas</Link>
-              {/* Usamos un <span> que parece un link para llamar a la función.
-                También podrías usar un <button>
-              */}
-              <span
-                onClick={handleLogout}
-                style={{ cursor: 'pointer', marginLeft: '15px', color: '#e74c3c' }}
+              <span 
+                onClick={handleLogout} 
+                className={styles.logoutButton}
               >
                 Logout
               </span>
             </>
           ) : (
-            // Si NO está autenticado
             <>
               <Link to="/login">Login</Link>
-              <Link to="/register" style={{ marginLeft: '15px' }}>Registro</Link>
+              <Link to="/register">Registro</Link>
             </>
           )}
         </nav>
@@ -53,13 +44,13 @@ function App() {
 
       <main>
         <Routes>
-          <Route
-            path="/"
+          <Route 
+            path="/" 
             element={
               <ProtectedRoute>
                 <NotasPage />
               </ProtectedRoute>
-            }
+            } 
           />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />

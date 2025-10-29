@@ -1,0 +1,41 @@
+/* src/App.module.css */
+
+.header {
+  display: flex;
+  justify-content: space-between; /* Título a la izq, nav a la der */
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+  margin-bottom: 20px;
+}
+
+.header h1 {
+  margin: 0;
+  text-align: left;
+  font-size: 28px;
+}
+
+.nav a, .nav span {
+  font-size: 16px;
+  font-weight: 500;
+  color: #555;
+  text-decoration: none;
+  margin-left: 20px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  transition: background-color 0.2s;
+}
+
+.nav a:hover {
+  background-color: #f4f4f4;
+}
+
+.logoutButton {
+  cursor: pointer;
+  color: #e74c3c !important; /* Rojo (importante para sobreescribir) */
+  font-weight: bold;
+}
+
+.logoutButton:hover {
+  background-color: #fbe2e0;
+}
