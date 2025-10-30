@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-// Importa 'useState' para manejar el estado del menú móvil
+import { useLang } from '../context/LangContext';
+import { content } from '../Content';
 
 const Navbar = () => {
-  // 'isOpen' guardará si el menú móvil está abierto o no
   const [isOpen, setIsOpen] = useState(false);
+  const { lang, toggleLang } = useLang(); // 3. Usar el Hook
+
+  const t = content[lang]; // 4. "t" será nuestro objeto de traducciones (es o en)
 
   return (
     <nav className="bg-brand-bg/90 backdrop-blur-md w-full fixed top-0 z-50 shadow-md">
@@ -12,7 +15,7 @@ const Navbar = () => {
 
         {/* --- 1. Logo o Nombre del Restaurante --- */}
         <a href="#inicio" className="text-2xl font-bold text-brand-primary">
-          El Olivo Dorado
+          {t.heroTitle} 
         </a>
 
         {/* --- 2. Enlaces de Navegación (Escritorio) --- */}
@@ -25,8 +28,16 @@ const Navbar = () => {
             href="#reservas" 
             className="bg-brand-primary text-white px-4 py-2 rounded-md hover:bg-brand-secondary hover:text-brand-dark transition-colors"
           >
-            Reservar
+            {t.navReservar}
           </a>
+
+          {/* --- 6. EL BOTÓN DE TOGGLE --- */}
+          <button 
+            onClick={toggleLang}
+            className="border-2 border-brand-primary text-brand-primary font-bold px-3 py-1 rounded-md text-sm"
+          >
+            {lang === 'es' ? 'EN' : 'ES'} 🇬🇧/🇪🇸
+          </button>
         </div>
 
         {/* --- 3. Botón de Hamburguesa (Móvil) --- */}
