@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLang } from '../context/LangContext';
-import { content } from '../Content';
+import { content } from '../content';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
